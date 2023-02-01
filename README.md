@@ -2,9 +2,10 @@
 Outlier analysis code for the ASC Capacity Tracker
 
 This code is only based on the workforce metrics collected.
+No CT data nor filepaths are visible and comes from internal extracts. 
+The only columns to have outlier analysis performed on them are headcounts and both hourly and daily metrics.
 
-No CT data is visible and comes from internal extracts. Our initial input file, wide_data, has columns:
-
+Our initial input file, wide_data, has columns:
 - ExtractDate
 - UpdatedWeek, UpdatedMonth
 - CqcId, LocalAuthority, Region, Setting
