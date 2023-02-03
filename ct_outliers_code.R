@@ -77,7 +77,7 @@ OA_reduce_CT_data <- function(wide_data){
 #' @examples 
 #' OA_get_outliers(provider_data, mytolerances)
 #' OA_get_outliers(provider_data, "tolerances.csv")
-OA_get_outliers <- function(data, tolerances){
+OA_get_outliers_field <- function(data, tolerances){
   output <- data %>% 
     # add the tolerances for each category of data
     left_join(tolerances) %>%
@@ -171,6 +171,70 @@ OA_get_outliers <- function(data, tolerances){
     select(ExtractDate, CqcId, Setting, Breakdown, Employee_Type, Detail, Value, Outlier) %>%
     filter(Outlier)
   
+  return(output)
+}
+
+#' Code takes long format data, finds outliers within that and then returns only the outliers (for smaller file sizes) based on headcount to hours ratio. Headcounts are taken to be correct over hourly stats
+#'
+#' @param data is the long format data that is to be analysed for outliers
+#'
+#' @return The long format data from \code{data}, with TRUE if marked as an outlier. Outliers are decided the ratio of hours/headcount being greater than the tolerance with default 168 hours per week per person
+#' @export
+#'
+#' @examples 
+#' OA_get_outliers_ratio(provider_data)
+#' OA_get_outliers_ratio(provider_data)
+OA_get_outliers_ratio <- function(data, tolerance = 168){
+  output <- data %>% 
+    # filter(Breakdown %in% c("Headcount", "Hours")) %>% 
+    filter(Detail == "Total") %>% 
+    pivot_wider(names_from = Breakdown, values_from = Value) %>% 
+    filter(!is.na(Hours), !is.na(Headcount), Hours > 0, Headcount > 0) %>% 
+    mutate(
+      "Outlier" = ifelse(Hours / (Headcount * 4) > tolerance, TRUE, FALSE)
+    ) %>%
+    pivot_longer(cols = c(Headcount, Hours), names_to = "Breakdown", values_to = "Value") %>% 
+    filter(Breakdown == "Hours") %>% 
+    select(ExtractDate, CqcId, Setting, Breakdown, Employee_Type, Detail, Value, Outlier) %>%
+    filter(Outlier)
+  return(output)
+}
+
+#' Finds outliers where responses in the headcount are equal across DE and Agency
+#'
+#' @param data long format responses to all questions
+#'
+#' @return Long format data of the repeated responses
+#' @export
+#'
+#' @examples OA_get_outliers_replicated(provider_data_reduced)
+OA_get_outliers_replicated <- function(data){
+  output <- data %>% 
+    filter(Breakdown == "Headcount") %>% 
+    pivot_wider(names_from = Employee_Type, values_from = Value) %>% 
+    filter(DE == Ag, DE > 0) %>% 
+    mutate("Outlier" = TRUE) %>% 
+    rename("Employee_Type" = DE, "Value" = Ag) %>% 
+    mutate(Employee_Type = "Ag")
+  return(output)
+}
+
+#' Code combines both types of outlier
+#'
+#' @param long_outliers_field long format data derived from the field only
+#' @param long_outliers_ratio long format data derived from comparing the headcounts and hours
+#' @param long_outliers_replicated long format data derived from comparing the two headcount figures
+#'
+#' @return All long format outliers
+#' @export
+#'
+#' @examples OA_get_outliers(long_outliers_field, long_outliers_ratio)
+OA_get_outliers <- function(long_outliers_field, long_outliers_ratio, long_outliers_replicated){
+  output <- long_outliers_field %>% 
+    bind_rows(long_outliers_ratio) %>% 
+    bind_rows(long_outliers_replicated) %>% 
+    group_by(across(c(-Value, -Outlier))) %>% 
+    summarise(Value = max(Value), Outlier = max(Value)) %>% ungroup()
   return(output)
 }
 
@@ -369,7 +433,11 @@ OA_full_process <- function(wide_data){
   # Run the software
   provider_data_reduced <- OA_reduce_CT_data(wide_data)
   print("Reduced complete")
-  long_outliers <- OA_get_outliers(provider_data_reduced, my_tolerances)
+  
+  long_outliers_field <- OA_get_outliers_field(provider_data_reduced, my_tolerances)
+  long_outliers_ratio <- OA_get_outliers_ratio(provider_data_reduced)
+  long_outliers_replicated <- OA_get_outliers_replicated(provider_data_reduced)
+  long_outliers <- OA_get_outliers(long_outliers_field, long_outliers_ratio, long_outliers_replicated)
   print("Outliers complete")
   wide_outliers <- OA_get_outliers_wide_form(long_outliers)
   print("Wide outliers complete")
