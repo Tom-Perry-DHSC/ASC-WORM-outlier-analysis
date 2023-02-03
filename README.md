@@ -13,3 +13,9 @@ Our initial input file, wide_data, has columns:
 - DirectlyEmployed_CovidAbsence, DirectlyEmployed_GeneralAbsence, DirectlyEmployed_TotalAbsence
 - HoursPaid, HoursAgency, HoursOvertime, HoursAbsence
 - DaysAbsence
+
+## Methodology of determining an outlier
+
+- A single value in each of the fields which is an outlier based on raw and percentage change relative to other responses
+- Comparing where the hours worked is over 168 hours per person per week. We assume the headcount figures are correct in preference to the hours
+- Comparing where the headcounts for the DE and Agency staff are equal
