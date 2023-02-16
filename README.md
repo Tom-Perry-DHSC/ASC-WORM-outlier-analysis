@@ -10,9 +10,10 @@ Our initial input file, wide_data, has columns:
 - UpdatedWeek, UpdatedMonth
 - CqcId, LocalAuthority, Region, Setting
 - DirectlyEmployed_Headcount, Agency_Headcount
-<!--- DirectlyEmployed_CovidAbsence, DirectlyEmployed_GeneralAbsence, DirectlyEmployed_TotalAbsence-->
 - HoursPaid, HoursAgency, HoursOvertime, HoursAbsence
 - DaysAbsence
+
+<!--- DirectlyEmployed_CovidAbsence, DirectlyEmployed_GeneralAbsence, DirectlyEmployed_TotalAbsence-->
 
 ## Methodology of determining an outlier
 
